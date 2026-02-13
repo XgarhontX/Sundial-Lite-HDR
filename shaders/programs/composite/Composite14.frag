@@ -47,6 +47,7 @@ in vec2 texcoord;
 #include "/libs/Uniform.glsl"
 #include "/libs/Common.glsl"
 #include "/libs/GbufferData.glsl"
+#include "/renodx.glsl"
 
 vec3 sampleBloom(vec2 coord, float level) {
     float expLevel = exp2(-level);
@@ -260,12 +261,21 @@ void main() {
     finalColor = max(vec3(0.0), mix(finalColor, vec3(luminance), vec3(1.0 - SATURATION)));
 
     finalColor = colorTemperature() * finalColor;
+    vec3 hdrColor = finalColor;
 
-    finalColor = TONEMAPPING(finalColor);
+    vec3 noise = (blueNoiseTemporal(texcoord.st) - 0.5) * (2.0 / 255.0);
 
-    finalColor += (blueNoiseTemporal(texcoord.st) - 0.5) * (2.0 / 255.0);
+    #if RENODX_UGRADE_ENABLED
+        finalColor = TONEMAPPING(finalColor);
+        hdrColor *= YFromBT709(TONEMAPPING(vec3(0.18))) / 0.18;
+        finalColor += noise
+    #endif
 
-    texBuffer0 = vec4(clamp(finalColor, vec3(0.0), vec3(1.0)), 1.0);
+    hdrColor += noise;
+
+    finalColor = ToneMapPass(finalColor, hdrColor, texcoord);
+
+    texBuffer0 = vec4(finalColor, 1.0);
 }
 
 /* DRAWBUFFERS:0 */

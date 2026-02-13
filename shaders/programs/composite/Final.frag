@@ -26,6 +26,7 @@ in vec2 texcoord;
 #define SHARPENING_LIMIT 0.18 // [0.0 0.02 0.04 0.06 0.08 0.1 0.12 0.14 0.16 0.18 0.2 0.22 0.24 0.26 0.28 0.3 0.32 0.34 0.36 0.38 0.4]
 
 #include "/libs/Uniform.glsl"
+#include "/renodx.glsl"
 
 // Copyright (C) 2025 Advanced Micro Devices, Inc.
 //
@@ -110,10 +111,12 @@ vec3 FidelityFX_RCAS(sampler2D colortex, vec2 coord, vec2 pixelSize) {
 }
 
 void main() {
-    vec3 color = textureLod(colortex0, texcoord, 0.0).rgb;
-    #ifdef FINAL_SHARPENING
+    // vec3 color = textureLod(colortex0, texcoord, 0.0).rgb;
+    // #ifdef FINAL_SHARPENING
         vec2 pixelSize = 1.0 / vec2(textureSize(colortex0, 0));
-        color = FidelityFX_RCAS(colortex0, texcoord, pixelSize);
-    #endif
+    //     color = FidelityFX_RCAS(colortex0, texcoord, pixelSize);
+    // #endif
+    vec3 color = RCASRenoDX(colortex0, ivec2(texcoord / pixelSize), RENODX_RCAS / 100., 1.f, RENODX_GAMMA_NONE, RENODX_WORKINGCS_AFTERTONEMAP);
+    color = RenderIntermediatePass(color);
     fragColor = vec4(color, 1.0);
 }
